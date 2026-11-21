@@ -21,6 +21,10 @@ from .driver_config import (
 PARAMETER_DEFAULTS = {
     "model": "l6",
     "side": "left",
+    "protocol": "",
+    "hop_transport": "",
+    "hop_request_id": -1,
+    "hop_brs": False,
     "transport_json": '{"backend":"socketcan","channel":"can0"}',
     "command_rate_hz": 250.0,
     "discrete_queue_capacity": 16,

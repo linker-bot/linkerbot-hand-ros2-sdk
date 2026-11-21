@@ -33,6 +33,10 @@ Changes after configure require deactivate/cleanup first.
 | --- | --- | --- |
 | `model` | `l6` | Case-insensitive SDK model; `l20-lite` also accepted |
 | `side` | `left` | `left/right`; empty for L30 |
+| `protocol` | empty | SDK model default; explicit `legacy` or `hop` |
+| `hop_transport` | empty | Manual HOP defaults to `can_fd`; explicit `can` or `can_fd`; discovery follows its recipe |
+| `hop_request_id` | -1 | SDK default endpoint; otherwise standard request ID 0..0x3FE |
+| `hop_brs` | false | Outgoing HOP FD BRS; invalid with classic CAN |
 | `transport_json` | SocketCAN `can0` | Strict backend-specific JSON |
 | `command_rate_hz` | 250 | SDK continuous-command scheduling ceiling |
 | `discrete_queue_capacity` | 16 | Bounded configuration/operation FIFO |

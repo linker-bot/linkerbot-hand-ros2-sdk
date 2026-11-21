@@ -14,6 +14,14 @@ on:
         description: Dependency branch, tag or commit (empty uses normal defaults)
         type: string
         default: ""
+      transport_ref:
+        description: linkerbot-transport branch, tag or commit (empty uses dependency_ref/main)
+        type: string
+        default: ""
+      hand_ref:
+        description: linkerbot-hand-python-sdk branch, tag or commit (empty uses dependency_ref/main)
+        type: string
+        default: ""
   schedule:
     - cron: "17 3 * * 1"
 
@@ -77,13 +85,13 @@ jobs:
           persist-credentials: false
           repository: ${{ env.CI_DEPENDENCY_OWNER }}/linkerbot-transport
           path: .ci/transport
-          ref: ${{ env.CI_DEPENDENCY_REF }}
+          ref: ${{ inputs.transport_ref || env.CI_DEPENDENCY_REF }}
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
           repository: ${{ env.CI_DEPENDENCY_OWNER }}/linkerbot-hand-python-sdk
           path: .ci/hand
-          ref: ${{ env.CI_DEPENDENCY_REF }}
+          ref: ${{ inputs.hand_ref || env.CI_DEPENDENCY_REF }}
       - name: Build and test all ROS packages
         run: bash tests/docker/run.sh "${{ matrix.ros }}" "$PWD/.ci/transport" "$PWD/.ci/hand" "$PWD/reports/${{ matrix.ros }}"
       - uses: actions/upload-artifact@v7

@@ -22,11 +22,37 @@ ros2 launch linkerbot_hand_ros hand.launch.py \
   transport_json:='{"backend":"socketcan","channel":"can0"}'
 ```
 
+## O6/O30 HOP over classic CAN or CAN FD
+
+Select the protocol and the device's **current** wire format explicitly:
+
+```bash
+ros2 launch linkerbot_hand_ros hand.launch.py \
+  model:=o6 side:=right protocol:=hop hop_transport:=can \
+  hop_request_id:=1 hop_brs:=false \
+  transport_json:='{"backend":"socketcan","channel":"can0"}'
+```
+
+Use `hop_transport:=can_fd` for CAN FD; the same parameters apply to O30.
+Empty `protocol` retains SDK defaults (O6: Legacy, O30: HOP), while request ID
+`-1` retains SDK defaults (O6: 1; O30: right 1, left 2). These static parameters
+select host-side control only. They do not switch the device mode or configure
+the host interface. Prepare matching bitrates before launch.
+
+For device mode switching, stop ROS and other command producers and use the
+Hand Python SDK's `examples/hop_can_mode.py`. Saving requires explicit `--save`;
+a pending mode needs a controlled device restart and another check. ROS exposes
+no mode-switch or automatic Flash-save service.
+
+With `discover:=true`, omit manual protocol/endpoint parameters. The SDK discovery
+recipe owns protocol, frame format, request ID and BRS; configure probe IDs/BRS
+in the discovery settings instead.
+
 ## MiniCANFD
 
 Install the vendor driver/library with matching process architecture: `libcanbus.so` on Linux,
 `HCanbus.dll` on Windows. ROS and the SDK do not distribute these libraries.
-O20, L30 and O30 can use the manual `vendor_canfd` backend:
+O6 with `protocol:=hop`, O20, L30 and O30 can use the manual `vendor_canfd` backend:
 
 ```bash
 ros2 launch linkerbot_hand_ros hand.launch.py \

@@ -2,6 +2,10 @@ linkerbot_hand:
   ros__parameters:
     model: l6
     side: left
+    protocol: ""  # Empty keeps the SDK model default (O6: legacy, O30: hop).
+    hop_transport: ""  # Empty: manual HOP uses can_fd; discovery uses its recipe.
+    hop_request_id: -1  # -1 keeps the SDK endpoint default.
+    hop_brs: false
     transport_json: '{"backend":"socketcan","channel":"can0"}'
     command_rate_hz: 250.0
     discrete_queue_capacity: 16

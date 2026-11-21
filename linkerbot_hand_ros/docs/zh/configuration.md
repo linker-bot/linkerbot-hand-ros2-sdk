@@ -32,6 +32,10 @@ configure 后不能修改以下参数，需先 deactivate/cleanup：
 | --- | --- | --- |
 | `model` | `l6` | `l6/o6/l20lite/l20/o20/l30/o30`，不区分大小写；也接受 `l20-lite` 作为 `L20Lite` 的拼写别名 |
 | `side` | `left` | `left/right`；L30 必须为空字符串 |
+| `protocol` | 空字符串 | 沿用 SDK 型号默认协议；可指定 `legacy` 或 `hop` |
+| `hop_transport` | 空字符串 | 手动 HOP 默认 `can_fd`；可指定 `can` 或 `can_fd`；发现模式沿用配方 |
+| `hop_request_id` | -1 | 沿用 SDK 默认端点；可指定 0..0x3FE 的标准请求 ID |
+| `hop_brs` | false | HOP FD 发送帧的 BRS；经典 CAN 不允许开启 |
 | `transport_json` | SocketCAN `can0` | 严格 JSON transport 配置 |
 | `command_rate_hz` | `250` | SDK 连续命令调度上限 |
 | `discrete_queue_capacity` | `16` | 离散和安全配置命令的有界 FIFO 容量 |

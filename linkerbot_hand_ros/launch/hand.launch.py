@@ -5,6 +5,10 @@ from linkerbot_hand_ros.discovery_launch import build_hand_launch, check_hand_mo
 _ARGUMENTS = (
     ("model", "l6", str),
     ("side", "left", str),
+    ("protocol", "", str),
+    ("hop_transport", "", str),
+    ("hop_request_id", "-1", int),
+    ("hop_brs", "false", bool),
     ("transport_json", '{"backend":"socketcan","channel":"can0"}', str),
     ("command_rate_hz", "250.0", float),
     ("discrete_queue_capacity", "16", int),
