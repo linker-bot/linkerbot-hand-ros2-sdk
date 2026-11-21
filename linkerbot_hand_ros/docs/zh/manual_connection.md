@@ -22,10 +22,34 @@ ros2 launch linkerbot_hand_ros hand.launch.py \
   transport_json:='{"backend":"socketcan","channel":"can0"}'
 ```
 
+## O6/O30 HOP 经典 CAN 与 CAN FD
+
+明确指定协议和设备**当前**使用的帧格式：
+
+```bash
+ros2 launch linkerbot_hand_ros hand.launch.py \
+  model:=o6 side:=right protocol:=hop hop_transport:=can \
+  hop_request_id:=1 hop_brs:=false \
+  transport_json:='{"backend":"socketcan","channel":"can0"}'
+```
+
+CAN FD 使用 `hop_transport:=can_fd`，O30 使用相同参数。
+`protocol` 留空时沿用 SDK 默认协议（O6：Legacy，O30：HOP）；
+请求 ID 为 `-1` 时沿用 SDK 默认值（O6：1；O30：右手 1、左手 2）。
+这些静态参数只选择主机端控制方式，不切换设备模式，也不配置主机接口；
+启动前须配置匹配的波特率。
+
+切换设备模式时，先停止 ROS 及其他命令发送程序，再使用 Hand Python SDK 的
+`examples/hop_can_mode.py`。保存需要显式 `--save`；待生效模式须受控重启后再次检查。
+ROS 不提供模式切换或自动保存 Flash 服务。
+
+`discover:=true` 时不要指定手动协议和端点参数，协议、帧格式、请求 ID 与 BRS
+由 SDK 发现配方提供；探测 ID、BRS 应放在发现配置中。
+
 ## MiniCANFD
 
 安装厂商驱动及与进程位数匹配的动态库：Linux 为 `libcanbus.so`，Windows 为 `HCanbus.dll`。
-ROS 和 SDK 不分发厂商库。O20、L30、O30 可使用手工 `vendor_canfd` 后端：
+ROS 和 SDK 不分发厂商库。O6（`protocol:=hop`）、O20、L30、O30 可使用手工 `vendor_canfd` 后端：
 
 ```bash
 ros2 launch linkerbot_hand_ros hand.launch.py \

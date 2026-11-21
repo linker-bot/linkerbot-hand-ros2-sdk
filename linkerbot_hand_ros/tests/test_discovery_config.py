@@ -27,6 +27,8 @@ def test_all_backends_and_fd_recipes_round_trip_without_loading_library(tmp_path
         "channels": ["can0", "pcan:PCAN_USBBUS1", "slcan:COM5", "minicanfd:0:1"],
         "l30_node_ids": [13],
         "o30_request_ids": [0x17],
+        "hop_request_ids": [0x123],
+        "hop_brs": True,
         "pcan": {
             "channels": ["PCAN_USBBUS1"],
             "fd_timing": dict(timing),
@@ -47,6 +49,8 @@ def test_all_backends_and_fd_recipes_round_trip_without_loading_library(tmp_path
     assert restored.pcan.fd_timing.nom_bitrate == 1_000_000
     assert restored.slcan.bus_options["tty_baudrate"] == 115200
     assert restored.minicanfd.config.config == 0
+    assert restored.hop_request_ids == (0x123,)
+    assert restored.hop_brs is True
 
 
 @pytest.mark.parametrize(

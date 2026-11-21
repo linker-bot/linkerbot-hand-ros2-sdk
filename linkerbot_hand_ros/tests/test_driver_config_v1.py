@@ -22,6 +22,10 @@ from linkerbot_hand_ros.transport_config import (
 
 def _parameters(**overrides):
     values = {
+        "protocol": "",
+        "hop_transport": "",
+        "hop_request_id": -1,
+        "hop_brs": False,
         "model": "l6",
         "side": "left",
         "transport_json": '{"backend":"socketcan","channel":"can0"}',

@@ -141,7 +141,13 @@ def parse_discovery_config(
 
     options = mapping(value, {f.name for f in fields(DiscoveryConfig)}, "discovery")
     try:
-        for name in ("channels", "backends", "l30_node_ids", "o30_request_ids"):
+        for name in (
+            "channels",
+            "backends",
+            "l30_node_ids",
+            "o30_request_ids",
+            "hop_request_ids",
+        ):
             if name in options and options[name] is not None:
                 options[name] = _sequence(options[name], name)
         for name in ("pcan", "slcan"):

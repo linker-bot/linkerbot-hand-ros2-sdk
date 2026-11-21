@@ -114,6 +114,7 @@ def create_hand_device(
     )
     options: dict[str, Any] = {
         "model": capabilities.model,
+        "protocol": capabilities.protocol,
         "transport": transport,
         "config": configuration.device_config,
     }

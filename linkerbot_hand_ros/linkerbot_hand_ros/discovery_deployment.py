@@ -11,6 +11,7 @@ from pathlib import Path
 
 import yaml
 from linkerbot_hand import (
+    DeviceCapabilities,
     HandSide,
     TransportKind,
     ValidationError,
@@ -33,11 +34,10 @@ from .discovery_config import (
     parse_discovery_config,
 )
 from .discovery_diagnostics import candidate_context, exception_details, failure_context
-from .driver_config import read_driver_configuration
+from .driver_config import IDENTITY_PARAMETERS, read_driver_configuration
 from .parameter_updates import PARAMETER_DEFAULTS
 
 SCHEMA = "linkerbot_hand_ros.discovery"
-IDENTITY_PARAMETERS = {"model", "side", "transport_json"}
 RUNTIME_PARAMETERS = set(PARAMETER_DEFAULTS).difference(IDENTITY_PARAMETERS)
 MATCH_REQUIRED = {"backend", "channel", "model", "side", "wire_protocol", "address"}
 MATCH_OPTIONAL = {"reported_side", "serial_number", "product_code", "sensor_variant"}
@@ -76,7 +76,13 @@ def normalize_namespace(value: str, *, allow_root: bool = False) -> str:
     return result
 
 
-def runtime_parameters(model: str, side: str, values: object) -> dict:
+def runtime_parameters(
+    model: str,
+    side: str,
+    values: object,
+    *,
+    capabilities: DeviceCapabilities | None = None,
+) -> dict:
     supplied = mapping(values, RUNTIME_PARAMETERS, "hand parameters")
     parameters = {
         name: value
@@ -90,10 +96,11 @@ def runtime_parameters(model: str, side: str, values: object) -> dict:
         if type(value) is not type(default):
             raise ValidationError(f"{name} must be {type(default).__name__}")
         parameters[name] = value
-    caps = get_declared_capabilities(
+    caps = capabilities or get_declared_capabilities(
         model, side=None if side == "not_applicable" else side
     )
     all_parameters = {
+        **{name: PARAMETER_DEFAULTS[name] for name in IDENTITY_PARAMETERS},
         **parameters,
         "model": model,
         "side": "" if caps.side is HandSide.NOT_APPLICABLE else caps.side.value,
@@ -206,7 +213,20 @@ def _load_deployment(path: Path) -> Deployment:
                     namespace,
                     match,
                     runtime_parameters(
-                        match["model"], match["side"], hand.get("parameters", {})
+                        match["model"],
+                        match["side"],
+                        hand.get("parameters", {}),
+                        capabilities=get_declared_capabilities(
+                            match["model"],
+                            side=None
+                            if match["side"] == "not_applicable"
+                            else match["side"],
+                            protocol="hop"
+                            if match["address"]["scheme"]
+                            in {"hop_endpoint", "o30_hop_endpoint"}
+                            else None,
+                            transport_kind=match["wire_protocol"],
+                        ),
                     ),
                 )
             )
@@ -339,7 +359,10 @@ def select_hands(
                     normalize_namespace(single_namespace, allow_root=True),
                     candidate_match(candidate),
                     runtime_parameters(
-                        candidate.model, candidate.side.value, parameters or {}
+                        candidate.model,
+                        candidate.side.value,
+                        parameters or {},
+                        capabilities=candidate.capabilities,
                     ),
                 ),
                 candidate,
@@ -374,7 +397,10 @@ def select_hands(
                     normalize_namespace(namespace_prefix.rstrip("/") + "/" + name),
                     candidate_match(candidate),
                     runtime_parameters(
-                        candidate.model, candidate.side.value, parameters or {}
+                        candidate.model,
+                        candidate.side.value,
+                        parameters or {},
+                        capabilities=candidate.capabilities,
                     ),
                 ),
                 candidate,

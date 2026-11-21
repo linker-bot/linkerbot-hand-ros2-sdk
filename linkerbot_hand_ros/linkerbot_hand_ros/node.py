@@ -70,7 +70,20 @@ class LinkerbotHandNode(LifecycleNode):
         )
         identity_defaults = {}
         if discovery_candidate is not None:
+            capabilities = discovery_candidate.capabilities
             identity_defaults = {
+                "protocol": capabilities.protocol.value,
+                "hop_transport": (
+                    discovery_candidate.wire_protocol.value
+                    if capabilities.protocol.value == "hop"
+                    else ""
+                ),
+                "hop_request_id": (
+                    discovery_candidate.address.request_id
+                    if capabilities.protocol.value == "hop"
+                    else -1
+                ),
+                "hop_brs": discovery_candidate.hop_brs,
                 "model": discovery_candidate.model,
                 "side": (
                     ""

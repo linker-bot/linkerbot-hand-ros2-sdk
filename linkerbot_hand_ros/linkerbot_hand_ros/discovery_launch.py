@@ -28,6 +28,7 @@ from .discovery_config import (
     read_yaml_document,
 )
 from .discovery_deployment import SCHEMA, load_deployment
+from .driver_config import IDENTITY_PARAMETERS
 
 _AUTOSTART_TIMEOUT_S = 30.0
 _AUTOSTART_POLL_S = 0.02
@@ -161,11 +162,7 @@ def check_hand_mode(context):
 
     discover = _boolean(_value(context, "discover", "false"), "discover")
     if discover:
-        conflicts = {
-            "model",
-            "side",
-            "transport_json",
-        } & context.launch_configurations.keys()
+        conflicts = IDENTITY_PARAMETERS & context.launch_configurations.keys()
         if conflicts:
             raise ValueError(
                 f"discover cannot use explicit manual parameters {sorted(conflicts)}; use channels or discovery_config"
@@ -228,7 +225,7 @@ def build_hand_launch(context, *, arguments):
     runtime = {
         name: value.evaluate(context)
         for name, value in parameters.items()
-        if name not in {"model", "side", "transport_json"}
+        if name not in IDENTITY_PARAMETERS
     }
     return [
         Node(

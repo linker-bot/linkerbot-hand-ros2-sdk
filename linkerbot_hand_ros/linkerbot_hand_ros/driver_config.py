@@ -12,7 +12,9 @@ from linkerbot_hand import (
     DeviceConfig,
     HandSide,
     PollingPlan,
+    ProtocolKind,
     TelemetrySemantic,
+    TransportKind,
     ValidationError,
     get_declared_capabilities,
 )
@@ -62,9 +64,18 @@ RUNTIME_RATE_PARAMETERS = frozenset(
         "diagnostic_rate_hz",
     )
 )
-STATIC_PARAMETERS = frozenset(
-    {"model", "side", "transport_json", *DEVICE_CONFIG_PARAMETERS}
+IDENTITY_PARAMETERS = frozenset(
+    {
+        "model",
+        "side",
+        "transport_json",
+        "protocol",
+        "hop_transport",
+        "hop_request_id",
+        "hop_brs",
+    }
 )
+STATIC_PARAMETERS = IDENTITY_PARAMETERS | DEVICE_CONFIG_PARAMETERS
 DRIVER_PARAMETERS = frozenset((*STATIC_PARAMETERS, *RUNTIME_RATE_PARAMETERS))
 
 ParameterReader = Callable[[str], object]
@@ -152,7 +163,42 @@ def read_driver_configuration(
     if not isinstance(side_value, str):
         raise ValidationError("side must be a string")
     side = side_value.strip() or None
-    capabilities = get_declared_capabilities(model, side=side)
+    protocol = read_parameter("protocol")
+    wire = read_parameter("hop_transport")
+    request_id = read_parameter("hop_request_id")
+    brs = read_parameter("hop_brs")
+    if not isinstance(protocol, str) or protocol not in ("", "legacy", "hop"):
+        raise ValidationError("protocol must be empty, legacy or hop")
+    if not isinstance(wire, str) or wire not in ("", "can", "can_fd"):
+        raise ValidationError("hop_transport must be empty, can or can_fd")
+    if type(request_id) is not int or not -1 <= request_id <= 0x3FE:
+        raise ValidationError("hop_request_id must be -1 or within 0..0x3FE")
+    if type(brs) is not bool:
+        raise ValidationError("hop_brs must be bool")
+    capabilities = get_declared_capabilities(
+        model,
+        side=side,
+        protocol=protocol
+        or (discovered_capabilities.protocol if discovered_capabilities else None),
+    )
+    hop = capabilities.protocol is ProtocolKind.HOP
+    if not hop and (wire or request_id != -1 or brs):
+        raise ValidationError("HOP parameters require protocol=hop")
+    hop_transport = TransportKind(
+        wire
+        or (
+            discovered_capabilities.transport.kind.value
+            if hop and discovered_capabilities
+            else "can_fd"
+        )
+    )
+    if hop:
+        capabilities = get_declared_capabilities(
+            model,
+            side=side,
+            protocol=capabilities.protocol,
+            transport_kind=hop_transport,
+        )
 
     if discovered_capabilities is None:
         transport = parse_transport_configuration(read_parameter("transport_json"))
@@ -162,16 +208,27 @@ def read_driver_configuration(
             discovered_capabilities.side,
         ):
             raise ValidationError("model/side disagree with the discovery binding")
+        if (capabilities.protocol, capabilities.transport.kind) != (
+            discovered_capabilities.protocol,
+            discovered_capabilities.transport.kind,
+        ):
+            raise ValidationError(
+                "protocol/transport disagree with the discovery binding"
+            )
         if read_parameter("transport_json") != "":
             raise ValidationError("discovery bindings cannot use manual transport_json")
         # The SDK candidate owns the complete transport recipe and endpoint.
         transport = None
+        capabilities = discovered_capabilities
     transaction_timeout_s = _finite_rate(
         "transaction_timeout_s",
         read_parameter("transaction_timeout_s"),
         allow_zero=True,
     )
     device_config = DeviceConfig(
+        hop_request_id=None if request_id == -1 else request_id,
+        hop_brs=brs,
+        hop_transport=hop_transport,
         command_rate_hz=read_parameter("command_rate_hz"),
         discrete_queue_capacity=read_parameter("discrete_queue_capacity"),
         mailbox_capacity=read_parameter("mailbox_capacity"),
@@ -257,6 +314,7 @@ def _angle_feedback_policy(value: object) -> AngleFeedbackPolicy:
 __all__ = [
     "DEVICE_CONFIG_PARAMETERS",
     "DRIVER_PARAMETERS",
+    "IDENTITY_PARAMETERS",
     "POLL_RATE_PARAMETERS",
     "RUNTIME_RATE_PARAMETERS",
     "STATIC_PARAMETERS",
